@@ -1,0 +1,78 @@
+body {
+    background-image: url("../../media/images/cards/felt2.jpg");
+    font-family: helvetica, sans-serif;
+}
+adiv.selection {
+    background-color: #fff;
+    width: 30em;
+}
+div.selection input {
+    width: 150px;
+    font-size: 4em;
+}
+
+.page.shuffled_home,
+.page.shuffled_deck_1,
+.page.shuffled_deck_2,
+.page.shuffled_cards {
+    color: #eee;
+    text-align: center;
+}
+.page.shuffled_deck_1 h1,
+.page.shuffled_deck_2 h1,
+.page.shuffled_cards h1 {
+    text-shadow: 2px 2px 2px rgba(5,5,5, 1);
+}
+#counter {
+    padding: 0.5em;
+    text-shadow: 2px 2px 2px rgba(5,5,5, 1);
+}
+.page.shuffled_cards #counter {
+    display:none;
+}
+#display-card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none; 
+    cursor: pointer;
+    margin: 0px; 
+    padding: 0px;
+
+    overflow: hidden;
+}
+
+#display-card .card {
+    float: none;
+}
+
+#display-card .card .spade,
+#display-card .card .club {
+    color: #000;
+}
+
+
+body.page.shuffled_home {
+    background-image: none;
+    color: #000;
+    text-shadow: none; /* 2px 2px 2px rgba(9,9,9, 1); */
+}
+
+
+.page.shuffled_home .a {
+
+}
+.page.shuffled_home .fine-print {
+    margin-top: 100px;
+    font-size: 0.6em;
+    color: #aaa;
+    font-weight: normal;
+}
+.page.shuffled_home .fine-print a {
+    color: #aaf;
+}
+.options {
+    color: #fff;
+}
