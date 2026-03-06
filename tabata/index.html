@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabata Timer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --work: #22c55e;
+      --rest: #f97316;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #2e2e40;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 960px;
+      align-items: start;
+    }
+
+    @media (max-width: 740px) {
+      .app { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Input ── */
+    textarea {
+      width: 100%;
+      height: 220px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+
+    .parse-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, var(--accent), #5b21b6);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .parse-btn:hover { opacity: 0.88; }
+
+    /* ── Format guide ── */
+    .format-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: var(--accent2);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+    }
+    .format-toggle svg {
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .format-toggle.open svg { transform: rotate(90deg); }
+
+    .format-guide {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+    .format-guide.open { display: block; }
+
+    .fmt-section { margin-bottom: 10px; }
+    .fmt-section:last-child { margin-bottom: 0; }
+
+    .fmt-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .fmt-code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .fmt-code .hl-header { color: #a78bfa; }
+    .fmt-code .hl-time   { color: #34d399; }
+    .fmt-code .hl-ex     { color: var(--text); }
+    .fmt-code .hl-muted  { color: var(--muted); }
+
+    .fmt-note {
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin-top: 4px;
+    }
+
+    /* ── Preview list ── */
+    .circuit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .circuit-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+
+    .circuit-card h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 4px;
+    }
+
+    .circuit-card .meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .exercise-tag {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      margin: 2px;
+    }
+
+    /* ── Timer display ── */
+    .timer-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .phase-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 4px 16px;
+      border-radius: 100px;
+      background: var(--work);
+      color: #fff;
+      transition: background 0.3s;
+    }
+    .phase-label.rest { background: var(--rest); }
+    .phase-label.idle { background: var(--muted); }
+
+    /* Ring timer */
+    .ring-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+
+    svg.ring {
+      transform: rotate(-90deg);
+      width: 220px;
+      height: 220px;
+    }
+
+    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 12; }
+    .ring-fg {
+      fill: none;
+      stroke: var(--work);
+      stroke-width: 12;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.25s linear, stroke 0.3s;
+    }
+    .ring-fg.rest { stroke: var(--rest); }
+
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .time-display {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .exercise-name {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text);
+      margin-top: 4px;
+      padding: 0 16px;
+    }
+
+    .round-info {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Next up */
+    .next-up {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .next-up span { color: var(--text); font-weight: 600; }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    .ctrl-btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .ctrl-btn:active { transform: scale(0.96); }
+    .ctrl-btn:hover { opacity: 0.85; }
+
+    .btn-start { background: var(--work); color: #fff; }
+    .btn-pause { background: var(--rest); color: #fff; }
+    .btn-reset { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      width: 100%;
+      background: var(--surface2);
+      border-radius: 100px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 100px;
+      transition: width 0.25s linear;
+    }
+
+    .progress-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    /* Queue */
+    .queue {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      background: var(--surface2);
+      border: 1px solid transparent;
+      opacity: 0.5;
+      transition: opacity 0.2s, border-color 0.2s;
+    }
+    .queue-item.active {
+      opacity: 1;
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+    .queue-item.done { opacity: 0.25; text-decoration: line-through; }
+
+    .queue-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .queue-item.active .queue-dot { background: var(--accent); }
+
+    /* Finished overlay */
+    .finished-banner {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,16,0.88);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 99;
+    }
+    .finished-banner.show { display: flex; }
+    .finished-banner h2 { font-size: 2.4rem; }
+    .finished-banner p { color: var(--muted); }
+    .finished-banner button {
+      padding: 12px 32px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<h1>⚡ TABATA TIMER</h1>
+
+<div class="app">
+  <!-- LEFT: input + preview -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
+        <div class="panel-title" style="margin-bottom:0;">Workout Definition</div>
+        <button class="format-toggle" id="fmtToggle" onclick="toggleFormat()">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+            <polygon points="2,1 9,5 2,9"/>
+          </svg>
+          Format Guide
+        </button>
+      </div>
+
+      <div class="format-guide" id="formatGuide">
+        <div class="fmt-section">
+          <div class="fmt-label">Per Exercise — each exercise gets its own timer</div>
+          <div class="fmt-code"><span class="hl-header">Circuit 1: 3 rounds, <span class="hl-time">0:30</span> per exercise, <span class="hl-time">10</span> sec rest</span>
+<span class="hl-ex">High Knees</span>
+<span class="hl-ex">Mountain Climbers</span>
+<span class="hl-ex">Jumping Jacks</span></div>
+          <div class="fmt-note">Each exercise gets a 0:30 countdown. 10s rest between exercises.</div>
+        </div>
+        <div class="fmt-section">
+          <div class="fmt-label">Per Round — all exercises share one timer</div>
+          <div class="fmt-code"><span class="hl-header">Circuit 2: 10 rounds, <span class="hl-time">1:05</span> per round, <span class="hl-time">15</span> sec rest</span>
+<span class="hl-ex">8x Curl to shoulder press</span>
+<span class="hl-ex">8x Forward lunges (total)</span>
+<span class="hl-ex">High Knees until end</span></div>
+          <div class="fmt-note">One 1:05 timer per round. Complete all exercises before it runs out. 15s rest between rounds.</div>
+        </div>
+        <div class="fmt-note" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+          Separate circuits with a blank line. Time can be <code style="color:var(--accent2)">M:SS</code> or plain seconds.
+        </div>
+      </div>
+
+      <textarea id="workoutInput" spellcheck="false">Circuit 1: 5 rounds, 0:30 per exercise, 10 sec rest
+High Knees
+Mountain Climbers
+Jumping Jacks
+Plank Jacks
+
+Circuit 2: 10 rounds, 1:05 per round, 15 sec rest
+8x Curl to shoulder press
+8x Forward lunges (total)
+High Knees until end</textarea>
+      <button class="parse-btn" onclick="parseAndPreview()">Load Workout</button>
+    </div>
+
+    <div class="panel" id="previewPanel" style="display:none;">
+      <div class="panel-title">Workout Preview</div>
+      <div class="circuit-list" id="circuitList"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: timer -->
+  <div class="panel timer-panel">
+    <div class="panel-title" style="text-align:center;">Timer</div>
+
+    <div class="phase-label idle" id="phaseLabel">READY</div>
+
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="98"/>
+        <circle class="ring-fg" id="ringFg" cx="110" cy="110" r="98"
+          stroke-dasharray="615.75"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="ring-center">
+        <div class="time-display" id="timeDisplay">--</div>
+      </div>
+    </div>
+
+    <div class="exercise-name" id="exerciseName">Load a workout to begin</div>
+    <div class="round-info" id="roundInfo"></div>
+    <div class="next-up" id="nextUp"></div>
+
+    <div class="controls">
+      <button class="ctrl-btn btn-start" id="startBtn" onclick="startTimer()" disabled>Start</button>
+      <button class="ctrl-btn btn-reset" onclick="resetTimer()">Reset</button>
+    </div>
+
+    <div style="width:100%;">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">—</div>
+    </div>
+
+    <div class="queue" id="queue"></div>
+  </div>
+</div>
+
+<!-- Finished overlay -->
+<div class="finished-banner" id="finishedBanner">
+  <h2>🎉 Workout Complete!</h2>
+  <p>Amazing work. You crushed it.</p>
+  <button onclick="dismissFinished()">Close</button>
+</div>
+
+<script>
+// ── Audio beeps ──────────────────────────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx;
+function ensureAudio() { if (!actx) actx = new AudioCtx(); }
+
+function beep(freq = 880, dur = 0.12, vol = 0.4, type = 'sine', delay = 0) {
+  ensureAudio();
+  const osc = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.connect(gain); gain.connect(actx.destination);
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, actx.currentTime + delay);
+  gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + delay + dur);
+  osc.start(actx.currentTime + delay);
+  osc.stop(actx.currentTime + delay + dur + 0.01);
+}
+
+function beepGo()        { beep(660, 0.1); beep(880, 0.15, 0.4, 'sine', 0.13); }
+function beepRest()      { beep(440, 0.18, 0.35); }
+function beepEnd()       { [0, 0.18, 0.36, 0.54].forEach(d => beep(1047, 0.14, 0.4, 'sine', d)); }
+function beepCountdown() { beep(660, 0.08, 0.3); }
+
+// ── Time helpers ─────────────────────────────────────────────────────────────
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// Parse "M:SS" or plain seconds string → total seconds
+function parseDuration(str) {
+  str = str.trim();
+  const mmss = str.match(/^(\d+):(\d{2})$/);
+  if (mmss) return parseInt(mmss[1]) * 60 + parseInt(mmss[2]);
+  return parseInt(str) || 0;
+}
+
+// Format total seconds → "M:SS"
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${pad(s)}`;
+}
+
+// ── Parse ───────────────────────────────────────────────────────────────────
+/*
+  Supported formats:
+    Circuit N: R rounds, M:SS per exercise, S sec rest   → each exercise gets M:SS
+    Circuit N: R rounds, M:SS per round,    S sec rest   → round time split equally across exercises
+
+  Work/rest time accepts M:SS or plain seconds.
+*/
+let circuits = [];
+
+function parseWorkout(text) {
+  const lines = text.split('\n');
+  const result = [];
+  let current = null;
+
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) { current = null; continue; }
+
+    // Circuit header — capture "round" or "exercise" as the time mode
+    const hdr = line.match(
+      /circuit\s*\d*\s*:\s*(\d+)\s*rounds?,\s*([\d:]+)\s*(?:sec\s*)?per\s*(round|exercise)s?,\s*([\d:]+)\s*(?:sec\s*)?rest/i
+    );
+    if (hdr) {
+      current = {
+        label:     line.split(':')[0].trim(),
+        rounds:    parseInt(hdr[1]),
+        timeValue: parseDuration(hdr[2]),
+        timeMode:  hdr[3].toLowerCase(), // 'round' | 'exercise'
+        restSec:   parseDuration(hdr[4]),
+        exercises: []
+      };
+      result.push(current);
+      continue;
+    }
+
+    if (current) {
+      current.exercises.push(line);
+    }
+  }
+
+  return result.filter(c => c.exercises.length > 0);
+}
+
+// Build a flat queue of steps
+function buildQueue(circuits) {
+  const steps = [];
+  circuits.forEach(circuit => {
+    for (let r = 1; r <= circuit.rounds; r++) {
+      const isLastRound = r === circuit.rounds;
+
+      if (circuit.timeMode === 'round') {
+        // One timer for the whole round — all exercises done within it
+        steps.push({
+          type: 'work',
+          mode: 'round',
+          exercises: circuit.exercises,
+          duration: circuit.timeValue,
+          round: r,
+          totalRounds: circuit.rounds,
+          circuitLabel: circuit.label
+        });
+        if (!isLastRound) {
+          steps.push({
+            type: 'rest',
+            nextExercise: null, // next round, same exercises
+            duration: circuit.restSec,
+            round: r,
+            totalRounds: circuit.rounds,
+            circuitLabel: circuit.label
+          });
+        }
+      } else {
+        // Per-exercise: individual timer per exercise
+        circuit.exercises.forEach((ex, i) => {
+          const isLastEx = i === circuit.exercises.length - 1;
+          steps.push({
+            type: 'work',
+            mode: 'exercise',
+            exercise: ex,
+            duration: circuit.timeValue,
+            round: r,
+            totalRounds: circuit.rounds,
+            circuitLabel: circuit.label,
+            exerciseIndex: i,
+            totalExercises: circuit.exercises.length
+          });
+          const isLastInCircuit = isLastRound && isLastEx;
+          if (!isLastInCircuit) {
+            const nextEx = !isLastEx ? circuit.exercises[i + 1] : circuit.exercises[0];
+            steps.push({
+              type: 'rest',
+              nextExercise: nextEx,
+              duration: circuit.restSec,
+              round: r,
+              totalRounds: circuit.rounds,
+              circuitLabel: circuit.label
+            });
+          }
+        });
+      }
+    }
+  });
+  return steps;
+}
+
+// ── UI: parse & preview ──────────────────────────────────────────────────────
+function parseAndPreview() {
+  const text = document.getElementById('workoutInput').value;
+  circuits = parseWorkout(text);
+
+  if (circuits.length === 0) {
+    alert('Could not parse any circuits. Check the format.');
+    return;
+  }
+
+  const list = document.getElementById('circuitList');
+  list.innerHTML = '';
+  circuits.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'circuit-card';
+    card.innerHTML = `
+      <h3>${c.label}</h3>
+      <div class="meta">${c.rounds} rounds · ${formatTime(c.timeValue)} per ${c.timeMode} · ${formatTime(c.restSec)} rest</div>
+      <div>${c.exercises.map(e => `<span class="exercise-tag">${e}</span>`).join('')}</div>
+    `;
+    list.appendChild(card);
+  });
+  document.getElementById('previewPanel').style.display = '';
+
+  resetTimer();
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('exerciseName').textContent = 'Press Start when ready';
+  document.getElementById('timeDisplay').textContent = formatTime(queue[0]?.duration ?? 0);
+}
+
+// ── Timer state ──────────────────────────────────────────────────────────────
+let queue = [];
+let currentStep = 0;
+let timeLeft = 0;
+let intervalId = null;
+let running = false;
+
+const CIRCUMFERENCE = 2 * Math.PI * 98; // ~615.75
+
+function updateRing(fraction, isRest) {
+  const fg = document.getElementById('ringFg');
+  fg.classList.toggle('rest', isRest);
+  fg.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+}
+
+function renderStep() {
+  if (currentStep >= queue.length) return;
+  const step = queue[currentStep];
+  const isRest = step.type === 'rest';
+
+  const pl = document.getElementById('phaseLabel');
+  pl.textContent = isRest ? 'REST' : 'WORK';
+  pl.className = 'phase-label ' + (isRest ? 'rest' : '');
+
+  if (isRest) {
+    const nextLabel = step.nextExercise ?? 'Next Round';
+    document.getElementById('exerciseName').textContent = `Rest — coming up: ${nextLabel}`;
+    document.getElementById('roundInfo').textContent = step.circuitLabel;
+  } else if (step.mode === 'round') {
+    document.getElementById('exerciseName').innerHTML =
+      step.exercises.map(e => `<div style="font-size:0.9em;line-height:1.7">${e}</div>`).join('');
+    document.getElementById('roundInfo').textContent =
+      `${step.circuitLabel} · Round ${step.round}/${step.totalRounds}`;
+  } else {
+    document.getElementById('exerciseName').textContent = step.exercise;
+    document.getElementById('roundInfo').textContent =
+      `${step.circuitLabel} · Round ${step.round}/${step.totalRounds} · Exercise ${step.exerciseIndex + 1}/${step.totalExercises}`;
+  }
+
+  const next = queue[currentStep + 1];
+  const nu = document.getElementById('nextUp');
+  if (next) {
+    const nextLabel = next.type === 'rest' ? 'Rest' : (next.mode === 'round' ? `Round ${next.round}` : next.exercise);
+    nu.innerHTML = `Next: <span>${nextLabel}</span>`;
+  } else {
+    nu.innerHTML = `Next: <span>Finish! 🎉</span>`;
+  }
+
+  document.getElementById('timeDisplay').textContent = formatTime(timeLeft);
+  updateRing(timeLeft / step.duration, isRest);
+
+  renderQueue();
+
+  const total = queue.length;
+  const pct = Math.round((currentStep / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `Step ${currentStep + 1} of ${total}`;
+}
+
+function renderQueue() {
+  const container = document.getElementById('queue');
+  container.innerHTML = '';
+  const start = Math.max(0, currentStep - 2);
+  const end = Math.min(queue.length, currentStep + 6);
+  for (let i = start; i < end; i++) {
+    const s = queue[i];
+    const div = document.createElement('div');
+    div.className = 'queue-item' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    div.innerHTML = `
+      <div class="queue-dot"></div>
+      <span style="flex:1;">${s.type === 'rest' ? '💤 Rest' : s.mode === 'round' ? `Round ${s.round}` : s.exercise}</span>
+      <span style="color:var(--muted);font-size:0.72rem;">${formatTime(s.duration)}${s.type === 'work' ? ` · R${s.round}` : ''}</span>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function tick() {
+  timeLeft--;
+
+  if (timeLeft <= 0) {
+    currentStep++;
+    if (currentStep >= queue.length) {
+      clearInterval(intervalId);
+      running = false;
+      beepEnd();
+      document.getElementById('phaseLabel').textContent = 'DONE';
+      document.getElementById('phaseLabel').className = 'phase-label idle';
+      document.getElementById('timeDisplay').textContent = '0:00';
+      updateRing(0, false);
+      document.getElementById('progressFill').style.width = '100%';
+      document.getElementById('progressLabel').textContent = 'Complete!';
+      document.getElementById('startBtn').textContent = 'Start';
+      document.getElementById('startBtn').onclick = startTimer;
+      document.getElementById('exerciseName').textContent = 'Workout Complete!';
+      document.getElementById('roundInfo').textContent = '';
+      document.getElementById('nextUp').textContent = '';
+      document.getElementById('finishedBanner').classList.add('show');
+      renderQueue();
+      return;
+    }
+    timeLeft = queue[currentStep].duration;
+    // beep on step transition
+    if (queue[currentStep].type === 'work') beepGo();
+    else beepRest();
+  } else if (timeLeft <= 3 && timeLeft > 0) {
+    beepCountdown();
+  }
+
+  renderStep();
+}
+
+function startTimer() {
+  if (queue.length === 0) { alert('Load a workout first.'); return; }
+  ensureAudio();
+
+  if (!running) {
+    running = true;
+    document.getElementById('startBtn').textContent = 'Pause';
+    document.getElementById('startBtn').onclick = pauseTimer;
+
+    if (currentStep === 0) beepGo();
+
+    intervalId = setInterval(tick, 1000);
+  }
+}
+
+function pauseTimer() {
+  running = false;
+  clearInterval(intervalId);
+  document.getElementById('startBtn').textContent = 'Resume';
+  document.getElementById('startBtn').onclick = startTimer;
+}
+
+function resetTimer() {
+  clearInterval(intervalId);
+  running = false;
+  currentStep = 0;
+
+  queue = buildQueue(circuits);
+  timeLeft = queue.length > 0 ? queue[0].duration : 0;
+
+  document.getElementById('phaseLabel').className = 'phase-label idle';
+  document.getElementById('phaseLabel').textContent = 'READY';
+  document.getElementById('timeDisplay').textContent = queue.length > 0 ? formatTime(timeLeft) : '--';
+  document.getElementById('exerciseName').textContent = queue.length > 0 ? 'Press Start when ready' : 'Load a workout to begin';
+  document.getElementById('roundInfo').textContent = '';
+  document.getElementById('nextUp').textContent = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressLabel').textContent = '—';
+  updateRing(1, false);
+  document.getElementById('startBtn').textContent = 'Start';
+  document.getElementById('startBtn').onclick = startTimer;
+  document.getElementById('queue').innerHTML = '';
+
+  if (queue.length > 0) renderQueue();
+}
+
+function dismissFinished() {
+  document.getElementById('finishedBanner').classList.remove('show');
+}
+
+function toggleFormat() {
+  const guide = document.getElementById('formatGuide');
+  const btn   = document.getElementById('fmtToggle');
+  const open  = guide.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+window.addEventListener('load', () => parseAndPreview());
+</script>
+</body>
+</html>
