@@ -829,6 +829,18 @@ function tick() {
       return;
     }
     timeLeft = queue[currentStep].duration;
+
+    // Auto-pause between circuits
+    if (queue[currentStep].circuitLabel !== queue[currentStep - 1].circuitLabel) {
+      pauseTimer();
+      renderStep();
+      document.getElementById('phaseLabel').textContent = 'NEXT CIRCUIT';
+      document.getElementById('phaseLabel').className = 'phase-label idle';
+      document.getElementById('startBtn').textContent = `Start ${queue[currentStep].circuitLabel}`;
+      document.getElementById('startBtn').onclick = startTimer;
+      return;
+    }
+
     // beep on step transition
     if (queue[currentStep].type === 'work') beepGo();
     else beepRest();
