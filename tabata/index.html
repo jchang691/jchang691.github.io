@@ -44,14 +44,14 @@
     /* ── Layout ── */
     .app {
       display: grid;
-      grid-template-columns: 420px 1fr;
+      grid-template-columns: 380px 1fr;
       gap: 20px;
       width: 100%;
-      max-width: 960px;
+      max-width: 1100px;
       align-items: start;
     }
 
-    @media (max-width: 740px) {
+    @media (max-width: 800px) {
       .app { grid-template-columns: 1fr; }
     }
 
@@ -213,20 +213,32 @@
       margin: 2px;
     }
 
-    /* ── Timer display ── */
+    /* ── Timer panel ── */
     .timer-panel {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 12px;
+      min-height: calc(100vh - 100px);
+      position: sticky;
+      top: 24px;
+    }
+
+    /* TOP: phase + round — the scoreboard header */
+    .timer-header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
     }
 
     .phase-label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      padding: 4px 16px;
+      padding: 6px 28px;
       border-radius: 100px;
       background: var(--work);
       color: #fff;
@@ -235,24 +247,35 @@
     .phase-label.rest { background: var(--rest); }
     .phase-label.idle { background: var(--muted); }
 
-    /* Ring timer */
+    /* Round info: HUGE and impossible to miss */
+    .round-info {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: -0.02em;
+      min-height: 2.4rem;
+    }
+
+    /* Giant ring */
     .ring-wrap {
       position: relative;
-      width: 220px;
-      height: 220px;
+      width: 300px;
+      height: 300px;
+      flex-shrink: 0;
     }
 
     svg.ring {
       transform: rotate(-90deg);
-      width: 220px;
-      height: 220px;
+      width: 300px;
+      height: 300px;
     }
 
-    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 12; }
+    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 14; }
     .ring-fg {
       fill: none;
       stroke: var(--work);
-      stroke-width: 12;
+      stroke-width: 14;
       stroke-linecap: round;
       transition: stroke-dashoffset 0.25s linear, stroke 0.3s;
     }
@@ -267,33 +290,25 @@
       justify-content: center;
     }
 
+    /* Massive time display */
     .time-display {
-      font-size: 3rem;
+      font-size: 5.5rem;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.04em;
       line-height: 1;
     }
 
     .exercise-name {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: 700;
       text-align: center;
       color: var(--text);
-      margin-top: 4px;
-      padding: 0 16px;
+      padding: 0 12px;
     }
 
-    .round-info {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    /* Next up */
     .next-up {
       text-align: center;
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: var(--muted);
     }
     .next-up span { color: var(--text); font-weight: 600; }
@@ -319,6 +334,15 @@
     .btn-start { background: var(--work); color: #fff; }
     .btn-pause { background: var(--rest); color: #fff; }
     .btn-reset { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    /* Bottom section: progress + queue pushed to end */
+    .timer-bottom {
+      margin-top: auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     /* Progress bar */
     .progress-bar-wrap {
@@ -348,7 +372,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      max-height: 200px;
+      max-height: 160px;
       overflow-y: auto;
     }
 
@@ -471,17 +495,21 @@ High Knees until end</textarea>
     </div>
   </div>
 
-  <!-- RIGHT: timer -->
+  <!-- RIGHT: timer — full-height scoreboard -->
   <div class="panel timer-panel">
-    <div class="panel-title" style="text-align:center;">Timer</div>
 
-    <div class="phase-label idle" id="phaseLabel">READY</div>
+    <!-- Scoreboard header: phase pill + big round counter -->
+    <div class="timer-header">
+      <div class="phase-label idle" id="phaseLabel">READY</div>
+      <div class="round-info" id="roundInfo"></div>
+    </div>
 
+    <!-- Giant ring -->
     <div class="ring-wrap">
-      <svg class="ring" viewBox="0 0 220 220">
-        <circle class="ring-bg" cx="110" cy="110" r="98"/>
-        <circle class="ring-fg" id="ringFg" cx="110" cy="110" r="98"
-          stroke-dasharray="615.75"
+      <svg class="ring" viewBox="0 0 300 300">
+        <circle class="ring-bg" cx="150" cy="150" r="136"/>
+        <circle class="ring-fg" id="ringFg" cx="150" cy="150" r="136"
+          stroke-dasharray="854.5"
           stroke-dashoffset="0"/>
       </svg>
       <div class="ring-center">
@@ -489,23 +517,27 @@ High Knees until end</textarea>
       </div>
     </div>
 
+    <!-- Exercise + next up -->
     <div class="exercise-name" id="exerciseName">Load a workout to begin</div>
-    <div class="round-info" id="roundInfo"></div>
     <div class="next-up" id="nextUp"></div>
 
+    <!-- Controls -->
     <div class="controls">
       <button class="ctrl-btn btn-start" id="startBtn" onclick="startTimer()" disabled>Start</button>
       <button class="ctrl-btn btn-reset" onclick="resetTimer()">Reset</button>
     </div>
 
-    <div style="width:100%;">
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    <!-- Bottom: progress bar + queue -->
+    <div class="timer-bottom">
+      <div style="width:100%;">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="progress-label" id="progressLabel">—</div>
       </div>
-      <div class="progress-label" id="progressLabel">—</div>
+      <div class="queue" id="queue"></div>
     </div>
 
-    <div class="queue" id="queue"></div>
   </div>
 </div>
 
@@ -701,7 +733,8 @@ let timeLeft = 0;
 let intervalId = null;
 let running = false;
 
-const CIRCUMFERENCE = 2 * Math.PI * 98; // ~615.75
+const CIRCUMFERENCE = 2 * Math.PI * 136; // ~854.5
+const R = 136;
 
 function updateRing(fraction, isRest) {
   const fg = document.getElementById('ringFg');
@@ -730,7 +763,7 @@ function renderStep() {
   } else {
     document.getElementById('exerciseName').textContent = step.exercise;
     document.getElementById('roundInfo').textContent =
-      `${step.circuitLabel} · Round ${step.round}/${step.totalRounds} · Exercise ${step.exerciseIndex + 1}/${step.totalExercises}`;
+      `${step.circuitLabel} · Round ${step.round}/${step.totalRounds} · Ex ${step.exerciseIndex + 1}/${step.totalExercises}`;
   }
 
   const next = queue[currentStep + 1];
